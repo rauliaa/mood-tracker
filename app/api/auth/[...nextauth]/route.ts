@@ -1,72 +1,48 @@
 import NextAuth, { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import type { NextAuthOptions } from "next-auth";
-import type { JWT } from "next-auth/jwt";
-import type { Session } from "next-auth";
-import type { User } from "next-auth";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import { prisma } from "@/lib/prisma";
+import { compare } from "bcrypt";
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: "credentials",
       credentials: {
-        email: { label: "Email", type: "text" },
+        email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials): Promise<User | null> {
-        // Contoh user dummy
-        const user = {
-          id: "1",
-          name: "Rahma",
-          email: "rahma@example.com",
-          password: "password123",
-        };
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
 
-        if (
-          credentials?.email === user.email &&
-          credentials?.password === user.password
-        ) {
-          return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-          };
-        }
-        return null;
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
+
+        if (!user) return null;
+
+        const isValid = await compare(credentials.password, user.password);
+        if (!isValid) return null;
+
+        // Convert id ke string
+        return {
+          id: user.id.toString(),
+          name: user.name,
+          email: user.email,
+        };
       },
     }),
   ],
+  session: {
+    strategy: "jwt",
+  },
   pages: {
     signIn: "/login",
   },
-  session: {
-    strategy: "jwt", // ✅ ini diubah dengan import yang sesuai
-  },
-  callbacks: {
-    async jwt({ token, user }: { token: JWT; user?: User }) {
-      if (user) {
-        token.name = user.name;
-        token.email = user.email;
-      }
-      return token;
-    },
-   async session({
-  session,
-  token,
-}: {
-  session: Session;
-  token: JWT;
-}) {
-  if (session.user) {
-    session.user.name = token.name;
-    session.user.email = token.email;
-  }
-
-  return session;
-    }
-
-  },
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
+// Handler NextAuth
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
