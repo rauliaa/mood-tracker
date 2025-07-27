@@ -1,50 +1,62 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
-  const [message, setMessage] = useState("");
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }, // <<<<<<<<<< penting
-        body: JSON.stringify(formData),
-      });
 
-      const data = await res.json();
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name }),
+    });
 
-      if (!res.ok) {
-        setMessage(data.error || "Gagal register");
-      } else {
-        setMessage("User registered successfully!");
-        router.push("/login");
-      }
-    } catch (err) {
-      console.error(err);
-      setMessage("Terjadi kesalahan jaringan");
+    if (res.ok) {
+      router.push('/login');
+    } else {
+      alert('Registrasi gagal.');
     }
   };
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl mb-4">Register</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-sm">
-        <input name="name" placeholder="Name" onChange={handleChange} required />
-        <input name="email" placeholder="Email" type="email" onChange={handleChange} required />
-        <input name="password" placeholder="Password" type="password" onChange={handleChange} required />
-        <button type="submit">Register</button>
-      </form>
-      {message && <p className="mt-4">{message}</p>}
-    </div>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#205781] to-[#4F959D] p-6">
+      <div className="bg-[#F6F8D5] rounded-2xl shadow-xl p-8 w-full max-w-md border border-[#98D2C0]">
+        <h1 className="text-2xl font-bold text-[#205781] text-center mb-4">✍️ Daftar Akun Baru</h1>
+        <form onSubmit={handleRegister} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Nama Lengkap"
+            className="w-full p-3 border border-[#98D2C0] rounded-xl text-[#205781]"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            className="w-full p-3 border border-[#98D2C0] rounded-xl text-[#205781]"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            className="w-full p-3 border border-[#98D2C0] rounded-xl text-[#205781]"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button type="submit" className="w-full bg-[#205781] text-[#F6F8D5] font-bold py-2 rounded-xl hover:bg-[#184663] transition">
+            Daftar
+          </button>
+        </form>
+      </div>
+    </main>
   );
 }
